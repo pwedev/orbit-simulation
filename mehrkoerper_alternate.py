@@ -560,16 +560,16 @@ def main():
 
 			for planet in planet_tiles:
 
-				planet.data[2] = planet.calc_object.getVel()[0]
-				planet.data[3] = planet.calc_object.getVel()[1]
-				planet.data[4] = planet.calc_object.getPos()[0]
-				planet.data[5] = planet.calc_object.getPos()[1]
+				planet.data[2] = planet.calc_object.getVel()[0] / (2.108 * 10**-1)
+				planet.data[3] = planet.calc_object.getVel()[1] / (2.108 * 10**-1)
+				planet.data[4] = planet.calc_object.getPos()[0] * 149.598
+				planet.data[5] = planet.calc_object.getPos()[1] * 149.598
 
 			for planet in planet_tiles:
 				calc.calc_step(planet.calc_object)
 				planet.calc_object.refresh()
 
-
+			
 			# frametime[1] = frametime[0]
 			# frametime[0] = time.time()
 			# frametime[2] = frametime[0] - frametime[1]
