@@ -14,7 +14,8 @@ import random
 import tkinter
 import re
 
-import mkp_leapfrog_calc as calc 
+import mkp_leapfrog_calc as calc
+import numpy as np
 
 #preperations for pygame window
 '''
@@ -27,6 +28,8 @@ root.withdraw()
 screen_width = int(root.winfo_screenwidth()*0.9)
 screen_height = int(root.winfo_screenheight()*0.9)
 screen = pygame.display.set_mode((screen_width, screen_height))
+
+default_values = None
 
 pygame.display.set_caption("Mehrkörpersimulator")
 #window_icon = pygame.image.load("icon.png")
@@ -73,7 +76,7 @@ class Planet_Blob:
 		self.designation = planet_data[0]
 		self.size = planet_size
 		self.pos_x = planet_data[4] * pos_scaling
-		self.pos_y = planet_data[4] * pos_scaling
+		self.pos_y = planet_data[5] * pos_scaling
 		#self.vel_x = None
 		#self.vel_y = None
 		self.trail = [[planet_data[4] * pos_scaling, planet_data[4] * pos_scaling]] #this is the length of the trail
@@ -87,7 +90,7 @@ class Planet_Blob:
 			self.trail = self.trail[:-1]
 
 		self.pos_x = planet_data[4] * pos_scaling
-		self.pos_y = planet_data[4] * pos_scaling
+		self.pos_y = planet_data[5] * pos_scaling
 
 	def rescale_trail(self, pos_scaling_new, pos_scaling_old):
 		#call this right after the nwe pos scaling has been calculated
@@ -104,10 +107,12 @@ class Planet_Blob:
 
 		#trail
 		for index, pos in enumerate(self.trail):
-			pygame.draw.rect(screen, (255, 255, 255), (int(screen_width-pos[0]), int(screen_height-pos[1]), 1, 1))
+			#print((int(screen_width-pos[0]), int(screen_height-pos[1])))
+			pygame.draw.line(screen, (255, 255, 255), (screen_width-int(pos[0]), screen_height-int(pos[1])), (1, 1))
 		#planet
-		pygame.draw.circle(screen, (255, 255, 255), (int(screen_width-self.pos_x), int(screen_height-self.pos_y)), int(5*self.size))
-		
+		print((self.pos_x, self.pos_y))
+		pygame.draw.circle(screen, (255, 255, 255), (screen_width-int(self.pos_x), screen_height-int(self.pos_y)), int(5*self.size))
+
 def scaled_planet_sizes(planet_tiles):
 	#masses are scaled relative to the biggest and smallest mass involved
 	#the biggest one is 100%, the smallest 10% of the max_blob_size
@@ -157,8 +162,8 @@ def pos_scaling_factor(screen_width, screen_height, menu_data, planet_button_box
 	scaling_factor = (screen_width*0.5*0.9)/max_x #returns the cords as if there is a 0/0 in the screens center
 	if (max_y * scaling_factor) > (screen_height*0.5*0.9):
 		scaling_factor = (screen_height*0.5*0.9)/max_y
-
-	return scaling_factor #the scaling factor will only be sed to transform the elements for depiction
+	#print(scaling_factor, screen_width, max_x, max_y)
+	return scaling_factor #the scaling factor will only be used to transform the elements for depiction
 
 class Planet_Tile:
 	'''
@@ -217,9 +222,28 @@ class Planet_Tile:
 			screen.fill((128, 128, 128), (self.box_x_line, self.y_start+10 + index*(self.box_height+10)+self.height*(self.instance-1), self.box_width, self.box_height))
 			#variable data
 			if self.data[index] != "":
-				
-				data_text = self.font.render(f"{self.data[index]}", True, (255, 255, 255))
-				screen.blit(data_text, (int(self.box_x_line + self.box_width/2 -  self.font.size(str(self.data[index]))[0]/2), int(10+self.box_height*1.75+index*(self.box_height+10)+self.height*(self.instance-1))))
+				# TODO: string formatierung
+				if index == 0:
+					data_text = self.font.render(f"{self.data[index]}", True, (255, 255, 255))
+				else:
+					window_str = "{:.13}".format(self.data[index])
+					if len(window_str) > 13:
+						window_str = window_str[0:13]
+					data_text = self.font.render(window_str, True, (255, 255, 255))
+				screen.blit(data_text, (int(self.box_x_line + self.box_width/2 -  self.font.size(window_str)[0]/2), int(10+self.box_height*1.75+index*(self.box_height+10)+self.height*(self.instance-1))))#
+			#grey text for units
+			elif index == 0:
+				data_text = self.font.render("any name", True, (170, 170, 170))
+				screen.blit(data_text, (int(self.box_x_line + self.box_width/2 -  self.font.size("any name")[0]/2), int(10+self.box_height*1.75+index*(self.box_height+10)+self.height*(self.instance-1))))
+			elif index == 1:
+				data_text = self.font.render("earth masses", True, (170, 170, 170))
+				screen.blit(data_text, (int(self.box_x_line + self.box_width/2 -  self.font.size("earth masses")[0]/2), int(10+self.box_height*1.75+index*(self.box_height+10)+self.height*(self.instance-1))))
+			elif index in (2, 3):
+				data_text = self.font.render("km/s", True, (170, 170, 170))
+				screen.blit(data_text, (int(self.box_x_line + self.box_width/2 -  self.font.size("km/s")[0]/2), int(10+self.box_height*1.75+index*(self.box_height+10)+self.height*(self.instance-1))))
+			elif index in (4,5):
+				data_text = self.font.render("10^6 km", True, (170, 170, 170))
+				screen.blit(data_text, (int(self.box_x_line + self.box_width/2 -  self.font.size("10^6 km")[0]/2), int(10+self.box_height*1.75+index*(self.box_height+10)+self.height*(self.instance-1))))
 
 def planet_data_button(data = False):
 	'''
@@ -238,7 +262,7 @@ def planet_data_button(data = False):
 		return (screen_width-font.size("Hide / Show Planetdata")[0]-80, 0+1, screen_width-1, font.size("Hide / Show Planetdata")[1]+15)
 
 #menu
-def menu_init():
+def menu_init(button_list):
 	'''
 	###set up all the required buttons
 	#get all the required vars form a list of all the buttonnames
@@ -246,7 +270,7 @@ def menu_init():
 	'''
 	#vars
 
-	button_list = ("Start Simulation", "Interrupt Simulation", "Reset Simulation", "Add Mass", "Clear All / New Simulation", "Save Initial", "Load Setup", "Depict All Planets", "Automatic Scale", "Timestep", "Framerate", "Take Picture")
+	button_list = button_list
 	color = (0, 0, 0)
 	text_size = 25
 	height = int(screen_height / len(button_list)) #depends on the number of buttons
@@ -268,7 +292,7 @@ def menu_init():
 	return (button_zones, color, button_list, text_size) #return all the relevant information
 
 def draw_menu(buttons):
-	'''
+	'''"Interrupt Simulation", "Reset Simulation", "Add Mass",
 	#use interation,the menudata and the buttonobject to make the buttons
 	'''
 	for button in buttons:
@@ -290,13 +314,23 @@ def start_sim(planet_tiles):
 	return (True, planet_tiles)
 	print("start simulation")
 
-def interrupt_sim():
+def interrupt_sim(state, button_list):
 	'''
 	stop interacting with Pers software and keep depicting the current state
 	enabele tile enditing
 	change button to continue simulation and revert the inital changes
 	'''
 	print("interrupt simulation")
+	#interrruption
+	if state != -1:
+		state = -1
+		button_list = [name if name != "Interrupt Simulation" else "Continue Simulation"for name in button_list] #button_list.replace("Interrupt Simulation", "Continue Simulation")
+		return (state, button_list)
+	#restart
+	state = 2
+	button_list = [name if name != "Continue Simulation" else "Interrupt Simulation" for name in button_list ]
+	return (state, button_list)
+
 
 def reset_sim():
 	'''
@@ -304,15 +338,30 @@ def reset_sim():
 	'''
 	print("reset simulation")
 
-def add_mass(planet_tiles, planet_button_box): #jens current
+def add_mass(planet_tiles, planet_button_box):
 	'''
 	have an option to hide this data
 	generate a tile class, (name, mass, vx, vy) should be avaliable (add option to change this), add a button for removing the tile and its planet,
 	add tiles to the top of the screen (keep their dimensions limited), color each tile the same way as the corresponging planet and change the color upon clicking on the color field,
 	set up a dynamic and acessible data structure tat can be used by others and keeps the data about the planets
 	'''
+	global default_values
 
 	planet_tiles.insert(0, Planet_Tile(len(planet_tiles)+1, (f"designation{len(planet_tiles)+1}", "mass", "velocity x", "velocity y", "positon x", "position y"), 15, planet_button_box[0], planet_button_box[3]))
+
+	f = open("default_planets.txt", 'r')
+	default_values = np.loadtxt(f, skiprows=1, delimiter='\t',  usecols = (1,2,3,4,5))
+	f.close()
+
+	if len(planet_tiles) <= 9:
+		planet_tiles[0].data[1] = str(default_values[len(planet_tiles) - 1][4])
+		planet_tiles[0].data[2] = str(default_values[len(planet_tiles) - 1][2] * 2.108 * 10**-4)
+		planet_tiles[0].data[3] = str(default_values[len(planet_tiles) - 1][3] * 2.108 * 10**-4)
+		planet_tiles[0].data[4] = str(default_values[len(planet_tiles) - 1][0] / 10**6)
+		planet_tiles[0].data[5] = str(default_values[len(planet_tiles) - 1][1] / 10**6)
+
+
+
 	return planet_tiles
 
 def clear_sim():
@@ -324,7 +373,6 @@ def save_inital():
 def depict_all_planets():
 	print("depict all planets")
 	return True
-	
 
 def automatic_scale():
 	print("scale autimatically")
@@ -346,8 +394,7 @@ def take_pic():
 
 #loop vars
 running = True
-menu_data = menu_init()
-buttons = [Button(menu_data[0][i][1], menu_data[0][i][2], menu_data[0][i][3], menu_data[1], menu_data[3], menu_data[2][i]) for i in range(len(menu_data[0]))] #__init__(self, y_pos, width, height, color, text_size, text)
+button_list = ["Start Simulation", "Interrupt Simulation", "Reset Simulation", "Add Mass", "Clear All / New Simulation", "Save Initial", "Load Setup", "Depict All Planets", "Automatic Scale", "Timestep", "Framerate", "Take Picture"]
 show_planets = True
 planet_button_box = planet_data_button(data = True)
 planet_tiles = []
@@ -358,6 +405,7 @@ rescale_now = True #this will trigger the rescaling of the simulation
 starting_state = []
 planet_sizes = []
 pos_sf = 1
+
 
 
 
@@ -380,7 +428,7 @@ while running:
 			else:
 				if input_pos[1] == 1:
 					planet_tiles[input_pos[0]].data[input_pos[1]-1] += event.unicode
-				elif event.unicode in (str(0), str(1), str(2), str(3), str(4), str(5), str(6), str(7), str(8), str(9), ".", "-"):
+				elif event.unicode in (str(0), str(1), str(2), str(3), str(4), str(5), str(6), str(7), str(8), str(9), ".", "-") and len(planet_tiles[input_pos[0]].data[input_pos[1]-1]) < 13:
 					planet_tiles[input_pos[0]].data[input_pos[1]-1] += event.unicode
 
 		#MOUSEBUTTONDOWN gives a reaktion if a button has been used
@@ -389,11 +437,13 @@ while running:
 			mouse_pos = pygame.mouse.get_pos()
 			if mouse_pos[0] < menu_data[0][0][2]:
 				if mouse_pos[1] > menu_data[0][0][1] and mouse_pos[1] < menu_data[0][0][3]:
-					tmp = start_sim(planet_tiles) #testcode
+					tmp = start_sim(planet_tiles)
 					sim_runs = tmp[0]
 					planet_tiles = tmp[1]
 				if mouse_pos[1] > menu_data[0][1][1] and mouse_pos[1] < menu_data[0][1][3]:
-					interrupt_sim()
+					tmp = interrupt_sim(sim_runs, button_list)
+					sim_runs = tmp[0]
+					button_list = tmp[1]
 				if mouse_pos[1] > menu_data[0][2][1] and mouse_pos[1] < menu_data[0][2][3]:
 					reset_sim()
 				if mouse_pos[1] > menu_data[0][3][1] and mouse_pos[1] < menu_data[0][3][3]:
@@ -425,7 +475,7 @@ while running:
 					for zone_index, zone in enumerate(tile.give_zones()): #check each tuple of zones, the first one is the closing one
 
 						if (mouse_pos[0] >= zone[0] and mouse_pos[0] <= zone[0]+zone[2]) and (mouse_pos[1] >= zone[1] and mouse_pos[1] <= zone[1]+zone[3]):
-							print(zone[0], zone[1], zone[2], zone[3])
+
 							#close button and deletion + reordering
 							if zone_index == 0:
 
@@ -440,9 +490,8 @@ while running:
 
 							#value input
 							if zone_index > 0:
-								print((tile_index, zone_index))
 								'''
-								if input_pos[1] != 1:	
+								if input_pos[1] != 1:
 								#convert the data to float, unless it is the designation
 									try:
 										planet_tiles[input_pos[0]].data[input_pos[1]-1] = float(planet_tiles[input_pos[0]].data[input_pos[1]-1])
@@ -461,10 +510,9 @@ while running:
 
 
 	#depict the planets
-	if sim_runs:
+	if sim_runs > 0:
 		#check if rescaling was requested and rescale if so
 		if rescale_now:
-			print("beep")
 			old_pos_sf = pos_sf
 
 			pos_sf = pos_scaling_factor(screen_width, screen_height, menu_data, planet_button_box, planet_tiles)
@@ -489,18 +537,21 @@ while running:
 
 			#initialise planets in calc subprogram
 			for planet in planet_tiles:
-				planet.calc_object = calc.planet(*planet.data[1:])
+				planet.calc_object = calc.planet(planet.data[1], planet.data[2] * 0.2108, planet.data[3] * 0.2108, planet.data[4] * 149598, planet.data[5] * 149598)
 
 			sim_runs += 1
 
 		#depict the planet blobs (depict func fot the planet blobs?)
 		for blob in planet_blob_list:
 			blob.depict(screen_width, screen_height)
+			#############################the planet positions are still fine here, next time the values reach this position, they've gone wild (by orders of magnitudes)
 
 		#update the planet data via Pers function planet_tiles[index].data
-		for planet in planet_tiles:
+		'''for planet in planet_tiles:
 			calc.calc_step(planet.calc_object)
 			planet.calc_object.refresh()
+
+			print(planet.data)
 
 			planet.data[1] = planet.calc_object.getMass()
 			planet.data[2] = planet.calc_object.getVel()[0]
@@ -508,11 +559,15 @@ while running:
 			planet.data[4] = planet.calc_object.getPos()[0]
 			planet.data[5] = planet.calc_object.getPos()[1]
 
+			print(planet.data)'''
+
 		#update the planet blobs
 		for index, blob in enumerate(planet_blob_list):
 			blob.update(planet_tiles[index].data, pos_sf)
 
 	#depict all the interactive sections
+	menu_data = menu_init(button_list)
+	buttons = [Button(menu_data[0][i][1], menu_data[0][i][2], menu_data[0][i][3], menu_data[1], menu_data[3], menu_data[2][i]) for i in range(len(menu_data[0]))] #__init__(self, y_pos, width, height, color, text_size, text)
 	draw_menu(buttons)
 	planet_data_button()
 	if show_planets:
@@ -521,8 +576,7 @@ while running:
 				planet_tile.instance = planet_tile_index + 1
 		for tile in planet_tiles:
 			tile.depict()
-			#print(tile.data)
-		#print("next")
+
 
 
 	time += timer.get_rawtime()
