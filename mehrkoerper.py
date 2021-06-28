@@ -100,18 +100,24 @@ class Planet_Blob:
 			pos_pair[0] = pos_pair[0]/pos_scaling_old * pos_scaling_new
 			pos_pair[1] = pos_pair[1]/pos_scaling_old * pos_scaling_new
 
-	def depict(self, screen_width, screen_height):
+	def depict(self, screen_width, screen_height, menu_data, planet_button_box, planet_tiles):
 		#depict trail as a fading line of dots
 		#depict the planet blob appropriateley sized
 		#subtract the coodinates form half the height and width of the screen
 
+		###################TODO: get aproper scaling for the screen, 
+		width_without_menu = screen_width - screen_width+planet_button_box[0] - menu_data[0][0][2] #central spaces x dimension if one calculates out the menus
+		#find the virtual (0/0)
+		zero_x = int(menu_data[0][0][2] + width_without_menu/2)
+		zero_y = int(screen_height/2)
+
 		#trail
-		for index, pos in enumerate(self.trail):
+		#for index, pos in enumerate(self.trail):
 			#print((int(screen_width-pos[0]), int(screen_height-pos[1])))
-			pygame.draw.line(screen, (255, 255, 255), (screen_width-int(pos[0]), screen_height-int(pos[1])), (1, 1))
+			#pygame.draw.line(screen, (255, 255, 255), (screen_width-int(pos[0]), screen_height-int(pos[1])), (1, 1))
 		#planet
-		print((self.pos_x, self.pos_y))
-		pygame.draw.circle(screen, (255, 255, 255), (screen_width-int(self.pos_x), screen_height-int(self.pos_y)), int(5*self.size))
+		#print((self.pos_x, self.pos_y), (screen_width-int(self.pos_x), screen_height-int(self.pos_y)), int(10*self.size))
+		pygame.draw.circle(screen, (255, 255, 255), (zero_x+int(self.pos_x), zero_y-int(self.pos_y)), int(50*self.size))
 
 def scaled_planet_sizes(planet_tiles):
 	#masses are scaled relative to the biggest and smallest mass involved
@@ -156,10 +162,10 @@ def pos_scaling_factor(screen_width, screen_height, menu_data, planet_button_box
 			max_x = abs(planet.data[5])
 
 	##reform and return all the checked values relative to the maximum value as a screenposition
-	screen_width = screen_width - screen_width+planet_button_box[0] - menu_data[0][0][3] #adjust for menu space
+	width_without_menu = screen_width - screen_width+planet_button_box[0] - menu_data[0][0][2] #adjust for menu space
 
 	#adjust the maximum values and see if x or y will determine the scaling (the highest value will always be at 0.9 times the hight of width of the screen)
-	scaling_factor = (screen_width*0.5*0.9)/max_x #returns the cords as if there is a 0/0 in the screens center
+	scaling_factor = (width_without_menu*0.5*0.9)/max_x #returns the cords as if there is a 0/0 in the screens center
 	if (max_y * scaling_factor) > (screen_height*0.5*0.9):
 		scaling_factor = (screen_height*0.5*0.9)/max_y
 	#print(scaling_factor, screen_width, max_x, max_y)
@@ -355,10 +361,10 @@ def add_mass(planet_tiles, planet_button_box):
 
 	if len(planet_tiles) <= 9:
 		planet_tiles[0].data[1] = str(default_values[len(planet_tiles) - 1][4])
-		planet_tiles[0].data[2] = str(default_values[len(planet_tiles) - 1][2] * 2.108 * 10**-4)
-		planet_tiles[0].data[3] = str(default_values[len(planet_tiles) - 1][3] * 2.108 * 10**-4)
-		planet_tiles[0].data[4] = str(default_values[len(planet_tiles) - 1][0] / 10**6)
-		planet_tiles[0].data[5] = str(default_values[len(planet_tiles) - 1][1] / 10**6)
+		planet_tiles[0].data[2] = str(default_values[len(planet_tiles) - 1][2] / 10**3)
+		planet_tiles[0].data[3] = str(default_values[len(planet_tiles) - 1][3] / 10**3)
+		planet_tiles[0].data[4] = str(default_values[len(planet_tiles) - 1][0] / 10**9)
+		planet_tiles[0].data[5] = str(default_values[len(planet_tiles) - 1][1] / 10**9)
 
 
 
@@ -537,21 +543,21 @@ while running:
 
 			#initialise planets in calc subprogram
 			for planet in planet_tiles:
-				planet.calc_object = calc.planet(planet.data[1], planet.data[2] * 0.2108, planet.data[3] * 0.2108, planet.data[4] * 149598, planet.data[5] * 149598)
+				planet.calc_object = calc.planet(planet.data[1], planet.data[2] * 0.2108, planet.data[3] * 0.2108, planet.data[4] / 149598, planet.data[5] / 149598)
 
 			sim_runs += 1
 
 		#depict the planet blobs (depict func fot the planet blobs?)
 		for blob in planet_blob_list:
-			blob.depict(screen_width, screen_height)
+			blob.depict(screen_width, screen_height, menu_data, planet_button_box, planet_tiles)
 			#############################the planet positions are still fine here, next time the values reach this position, they've gone wild (by orders of magnitudes)
 
 		#update the planet data via Pers function planet_tiles[index].data
-		'''for planet in planet_tiles:
+		for planet in planet_tiles:
 			calc.calc_step(planet.calc_object)
 			planet.calc_object.refresh()
 
-			print(planet.data)
+			#print(planet.data)
 
 			planet.data[1] = planet.calc_object.getMass()
 			planet.data[2] = planet.calc_object.getVel()[0]
@@ -559,7 +565,7 @@ while running:
 			planet.data[4] = planet.calc_object.getPos()[0]
 			planet.data[5] = planet.calc_object.getPos()[1]
 
-			print(planet.data)'''
+			#print(planet.data)
 
 		#update the planet blobs
 		for index, blob in enumerate(planet_blob_list):
