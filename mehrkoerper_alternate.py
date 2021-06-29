@@ -127,7 +127,7 @@ def scaled_planet_sizes(planet_tiles):
 	planet_sizes = []
 
 	for planet_tile in planet_tiles:
-		planet_sizes.append(len(str(planet_tile.data[1]))-1) #get the order of magnitudeof the mass
+		planet_sizes.append(planet_tile.data[1]) #get the order of magnitudeof the mass
 
 	min_val, max_val = min(planet_sizes), max(planet_sizes)
 
@@ -139,9 +139,10 @@ def scaled_planet_sizes(planet_tiles):
 
 	#use a linear formula to get percentage values for the rest of the masses
 	else:
-		slope = (0.1 - 1) / (min_val - max_val)
-		for index, planet in enumerate(planet_sizes):
-			planet_sizes[index] = slope*(planet-min_val)+0.1
+
+		#slope = (0.1 - 1) / (min_val - max_val)
+		for index, mass in enumerate(planet_sizes):
+			planet_sizes[index] = (mass)**(1/5)/(max_val)**(1/5) # 5th or 6th root is good value
 
 		return planet_sizes #returns are 0.1 to 1 of whatever the blobs size is supposed to be
 
@@ -166,9 +167,9 @@ def pos_scaling_factor(screen_width, screen_height, menu_data, planet_button_box
 	width_without_menu = screen_width - screen_width+planet_button_box[0] - menu_data[0][0][2] #adjust for menu space
 
 	#adjust the maximum values and see if x or y will determine the scaling (the highest value will always be at 0.9 times the hight of width of the screen)
-	scaling_factor = (width_without_menu*0.5*0.9)/max_x #returns the cords as if there is a 0/0 in the screens center
-	if (max_y * scaling_factor) > (screen_height*0.5*0.9):
-		scaling_factor = (screen_height*0.5*0.9)/max_y
+	scaling_factor = (width_without_menu*0.5*0.75)/max_x #returns the cords as if there is a 0/0 in the screens center
+	if (max_y * scaling_factor) > (screen_height*0.5*0.75):
+		scaling_factor = (screen_height*0.5*0.75)/max_y
 	#print(scaling_factor, screen_width, max_x, max_y)
 	return scaling_factor #the scaling factor will only be used to transform the elements for depiction
 
@@ -383,7 +384,12 @@ def depict_all_planets():
 	return True
 
 def automatic_scale():
-	print("scale autimatically")
+
+	global pos_sf, screen_width, screen_height, menu_data, planet_button_box, planet_tiles
+
+	pos_sf = pos_scaling_factor(screen_width, screen_height, menu_data, planet_button_box, planet_tiles)
+
+	print("scale automatically")
 
 def load_setup():
 	print("loading setup")
@@ -403,6 +409,9 @@ def main():
 
 	#loop vars
 	running = True
+
+	global planet_button_box, planet_tiles, pos_sf
+
 	button_list = ["Start Simulation", "Interrupt Simulation", "Reset Simulation", "Add Mass", "Clear All / New Simulation", "Save Initial", "Load Setup", "Depict All Planets", "Automatic Scale", "Timestep", "Framerate", "Take Picture"]
 	show_planets = True
 	planet_button_box = planet_data_button(data = True)
@@ -414,6 +423,8 @@ def main():
 	starting_state = []
 	planet_sizes = []
 	pos_sf = 1
+
+	global menu_data
 
 	frametime = [0,0,0]
 	framerate = 0
@@ -569,7 +580,7 @@ def main():
 				calc.calc_step(planet.calc_object)
 				planet.calc_object.refresh()
 
-			
+
 			# frametime[1] = frametime[0]
 			# frametime[0] = time.time()
 			# frametime[2] = frametime[0] - frametime[1]
@@ -583,6 +594,7 @@ def main():
 				blob.update(planet_tiles[index].data, pos_sf)
 
 		#depict all the interactive sections
+
 		menu_data = menu_init(button_list)
 		buttons = [Button(menu_data[0][i][1], menu_data[0][i][2], menu_data[0][i][3], menu_data[1], menu_data[3], menu_data[2][i]) for i in range(len(menu_data[0]))] #__init__(self, y_pos, width, height, color, text_size, text)
 		draw_menu(buttons)
