@@ -80,7 +80,7 @@ class Planet_Blob:
 		self.pos_y = planet_data[5] * pos_scaling
 		#self.vel_x = None
 		#self.vel_y = None
-		self.trail = [[planet_data[4] * pos_scaling, planet_data[4] * pos_scaling]] #this is the length of the trail
+		self.trail = [[0, 0]] #this is the length of the trail
 
 	def update(self, planet_data, pos_scaling):
 		#take the updated data from Per; insert the old pos data into the trail, delete the last entry in the trail;
@@ -106,16 +106,16 @@ class Planet_Blob:
 		#depict the planet blob appropriateley sized
 		#subtract the coodinates form half the height and width of the screen
 
-		###################TODO: get aproper scaling for the screen,
 		width_without_menu = screen_width - screen_width+planet_button_box[0] - menu_data[0][0][2] #central spaces x dimension if one calculates out the menus
 		#find the virtual (0/0)
 		zero_x = int(menu_data[0][0][2] + width_without_menu/2)
 		zero_y = int(screen_height/2)
 
 		#trail
-		#for index, pos in enumerate(self.trail):
-			#print((int(screen_width-pos[0]), int(screen_height-pos[1])))
-			#pygame.draw.line(screen, (255, 255, 255), (screen_width-int(pos[0]), screen_height-int(pos[1])), (1, 1))
+		for index, pos in enumerate(self.trail):
+			#print(f"{(zero_x+int(pos[0]=)}"), f"{zero_y-int(pos[1])}"))
+			#print(f"{zero_x+int(pos[0])=}", f"{zero_y-int(pos[1])=}")
+			pygame.draw.line(screen, (255, 255, 255), (zero_x+int(pos[0]), zero_y-int(pos[1])), (zero_x+int(pos[0]), zero_y-int(pos[1])))
 		#planet
 		#print((self.pos_x, self.pos_y), (screen_width-int(self.pos_x), screen_height-int(self.pos_y)), int(10*self.size))
 		pygame.draw.circle(screen, (255, 255, 255), (zero_x+int(self.pos_x), zero_y-int(self.pos_y)), int(50*self.size))
